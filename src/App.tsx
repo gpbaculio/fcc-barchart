@@ -68,6 +68,8 @@ class App extends Component<AppProps, AppState> {
       .attr('y', height + 50)
       .text('More Information: http://www.bea.gov/national/pdf/nipaguid.pdf')
       .attr('class', 'info');
+
+    // handle bottom axis
     if (xMinDate && xMaxDate) {
       // using scaleTime because of date
       const xScale = scaleTime()
