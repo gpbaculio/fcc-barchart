@@ -48,31 +48,30 @@ class App extends Component<AppProps, AppState> {
   };
   createBarChart = () => {
     const { data, xMinDate, xMaxDate } = this.state;
-    if (data && xMinDate && xMaxDate) {
-      const node = this.node,
-        yMargin = 40,
-        width = 800,
-        height = 400,
-        barWidth = width / data.length;
+    const node = this.node,
+      yMargin = 40,
+      width = 800,
+      height = 400,
+      barWidth = data ? width / data.length : null;
 
-      const svgNode = select('.barchart')
-        .attr('width', width + 100)
-        .attr('height', height + 60);
-      console.log('svgNode ', svgNode);
-      svgNode
-        .append('text')
-        .attr('transform', 'rotate(-90)')
-        .attr('x', -200)
-        .attr('y', 80)
-        .text('Gross Domestic Product');
+    const svgNode = select('.barchart')
+      .attr('width', width + 100)
+      .attr('height', height + 60);
+    console.log('svgNode ', svgNode);
+    svgNode
+      .append('text')
+      .attr('transform', 'rotate(-90)')
+      .attr('x', -200)
+      .attr('y', 80)
+      .text('Gross Domestic Product');
 
-      svgNode
-        .append('text')
-        .attr('x', width / 2 + 120)
-        .attr('y', height + 50)
-        .text('More Information: http://www.bea.gov/national/pdf/nipaguid.pdf')
-        .attr('class', 'info');
-
+    svgNode
+      .append('text')
+      .attr('x', width / 2 + 120)
+      .attr('y', height + 50)
+      .text('More Information: http://www.bea.gov/national/pdf/nipaguid.pdf')
+      .attr('class', 'info');
+    if (xMinDate && xMaxDate) {
       // using scaleTime because of date
       const xScale = scaleTime()
         .domain([xMinDate, xMaxDate])
@@ -80,7 +79,7 @@ class App extends Component<AppProps, AppState> {
 
       const xAxis = axisBottom(xScale);
 
-      const xAxisGroup = svgNode
+      svgNode
         .append('g')
         .call(xAxis)
         .attr('id', 'x-axis')
