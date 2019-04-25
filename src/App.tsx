@@ -15,7 +15,6 @@ interface AppState {
 }
 
 class App extends Component<AppProps, AppState> {
-  private node: React.RefObject<SVGSVGElement>;
   constructor(props: AppProps) {
     super(props);
     this.state = {
@@ -24,7 +23,6 @@ class App extends Component<AppProps, AppState> {
       error: null,
       data: null
     };
-    this.node = React.createRef();
   }
   componentDidMount = async () => {
     try {
@@ -48,8 +46,7 @@ class App extends Component<AppProps, AppState> {
   };
   createBarChart = () => {
     const { data, xMinDate, xMaxDate } = this.state;
-    const node = this.node,
-      yMargin = 40,
+    const yMargin = 40,
       width = 800,
       height = 400,
       barWidth = data ? width / data.length : null;
@@ -57,7 +54,7 @@ class App extends Component<AppProps, AppState> {
     const svgNode = select('.barchart')
       .attr('width', width + 100)
       .attr('height', height + 60);
-    console.log('svgNode ', svgNode);
+
     svgNode
       .append('text')
       .attr('transform', 'rotate(-90)')
@@ -87,7 +84,7 @@ class App extends Component<AppProps, AppState> {
     }
   };
   render() {
-    return <svg className='barchart' ref={this.node} />;
+    return <svg className='barchart' />;
   }
 }
 
