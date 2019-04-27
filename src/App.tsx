@@ -14,6 +14,7 @@ interface AppState {
   data: [string, number][] | null;
   gdp: number[] | null;
   gdpMax: number | undefined;
+  yearsDate: Date[] | null;
 }
 
 class App extends Component<AppProps, AppState> {
@@ -25,7 +26,8 @@ class App extends Component<AppProps, AppState> {
       error: null,
       data: null,
       gdp: null,
-      gdpMax: 0
+      gdpMax: 0,
+      yearsDate: null
     };
   }
   componentDidMount = async () => {
@@ -36,30 +38,37 @@ class App extends Component<AppProps, AppState> {
         data: [string, number][];
       } = await axios.get(url).then(({ data }) => data);
       // data is array of arrays, data on first index of an array is a date
-      const yearsDate: string[] = data.map(([year]) => year);
+      const yearsDate: Date[] = data.map(([year]) => new Date(year));
       // x-axis max
-      const xMaxDate = new Date(max(yearsDate) as string);
+      const xMaxDate = new Date(`${max(yearsDate)}`);
       // set to the end of quarters
-      xMaxDate.setMonth(xMaxDate.getMonth() + 3); // month starts at 0:jan
+      xMaxDate.setMonth(xMaxDate.getMonth() + 3); // e.g.: 0 = jan. 0+3=3, 3=march
       // x-axis min
-      const xMinDate = new Date(min(yearsDate) as string);
+      const xMinDate = min(yearsDate) as Date;
 
       const gdp: number[] = data.map(([, gdp]) => gdp);
-
       const gdpMax = max(gdp);
 
-      this.setState({ xMaxDate, xMinDate, data, gdp, gdpMax });
+      this.setState({ xMaxDate, xMinDate, data, gdp, gdpMax, yearsDate });
       this.createBarChart();
     } catch (error) {
       this.setState({ error });
     }
   };
   createBarChart = () => {
-    const { data, xMinDate, xMaxDate, gdpMax } = this.state;
+    const { data, xMinDate, xMaxDate, gdpMax, gdp, yearsDate } = this.state;
     const yMargin = 40,
       width = 800,
-      height = 400,
-      barWidth = data ? width / data.length : null;
+      height = 400;
+    var tooltip = select('.barchart')
+      .append('div')
+      .attr('id', 'tooltip')
+      .style('opacity', 0);
+
+    var overlay = select('.barchart')
+      .append('div')
+      .attr('class', 'overlay')
+      .style('opacity', 0);
 
     const svgNode = select('.barchart')
       .attr('width', width + 100)
@@ -79,8 +88,16 @@ class App extends Component<AppProps, AppState> {
       .text('More Information: http://www.bea.gov/national/pdf/nipaguid.pdf')
       .attr('class', 'info');
 
-    // handle bottom x axis
-    if (xMinDate && xMaxDate) {
+    if (
+      xMinDate &&
+      xMaxDate &&
+      gdpMax &&
+      gdp &&
+      yearsDate &&
+      data &&
+      yearsDate
+    ) {
+      // handle bottom x axis
       // using scaleTime because of date
       const xScale = scaleTime()
         .domain([xMinDate, xMaxDate])
@@ -93,9 +110,8 @@ class App extends Component<AppProps, AppState> {
         .call(xAxis)
         .attr('id', 'x-axis')
         .attr('transform', 'translate(60, 400)');
-    }
-    // handle left y axis
-    if (gdpMax) {
+
+      // handle left y axis
       const yAxisScale = scaleLinear()
         .domain([0, gdpMax])
         .range([height, 0]);
@@ -106,6 +122,44 @@ class App extends Component<AppProps, AppState> {
         .append('g')
         .call(yAxis)
         .attr('id', 'y-axis')
+        .attr('transform', 'translate(60, 0)');
+
+      // chart data
+      // scaleLinear -> https://www.youtube.com/watch?v=gGuJWQqsnXc
+
+      const barWidth = width / 275;
+
+      const linearScale = scaleLinear()
+        .domain([0, gdpMax])
+        .range([0, height]);
+
+      const scaledGdp = gdp.map(item => linearScale(item));
+
+      svgNode
+        .selectAll('rect')
+        .data(scaledGdp)
+        .enter()
+        .append('rect')
+        .attr('data-date', function(d, i) {
+          return data[i][0];
+        })
+        .attr('data-gdp', function(d, i) {
+          return data[i][1];
+        })
+        .attr('class', 'bar')
+        .attr('x', function(d, i) {
+          console.log('ts i ', i);
+          console.log('ts yearsDate[i] i ', yearsDate[i]);
+          return xScale(yearsDate[i]);
+        })
+        .attr('y', function(d, i) {
+          return height - d;
+        })
+        .attr('width', barWidth)
+        .attr('height', function(d) {
+          return d;
+        })
+        .style('fill', '#33adff')
         .attr('transform', 'translate(60, 0)');
     }
   };
