@@ -8,13 +8,14 @@ import { url } from './constants';
 
 interface AppProps {}
 interface AppState {
-  xMaxDate: Date | undefined;
-  xMinDate: Date | undefined;
+  xMaxDate: Date;
+  xMinDate: Date;
   error: string | null;
   data: [string, number][] | null;
-  gdp: number[] | null;
+  gdp: number[];
   gdpMax: number | undefined;
-  yearsDate: Date[] | null;
+  yearsDate: Date[];
+  yearQuarter: string[];
 }
 
 class App extends Component<AppProps, AppState> {
@@ -25,9 +26,10 @@ class App extends Component<AppProps, AppState> {
       xMinDate: new Date(Date.now()),
       error: null,
       data: null,
-      gdp: null,
+      gdp: [],
       gdpMax: 0,
-      yearsDate: null
+      yearsDate: [],
+      yearQuarter: []
     };
   }
   componentDidMount = async () => {
@@ -45,30 +47,51 @@ class App extends Component<AppProps, AppState> {
       xMaxDate.setMonth(xMaxDate.getMonth() + 3); // e.g.: 0 = jan. 0+3=3, 3=march
       // x-axis min
       const xMinDate = min(yearsDate) as Date;
-
       const gdp: number[] = data.map(([, gdp]) => gdp);
       const gdpMax = max(gdp);
+      const yearQuarter = data.map(([date]) => {
+        const monthInddex = date.substring(5, 7);
+        let quarter;
 
-      this.setState({ xMaxDate, xMinDate, data, gdp, gdpMax, yearsDate });
+        if (monthInddex === '01') {
+          quarter = 'Q1';
+        } else if (monthInddex === '04') {
+          quarter = 'Q2';
+        } else if (monthInddex === '07') {
+          quarter = 'Q3';
+        } else if (monthInddex === '10') {
+          quarter = 'Q4';
+        }
+        return `${date.substring(0, 4)} ${quarter}`;
+      });
+
+      this.setState({
+        xMaxDate,
+        xMinDate,
+        data,
+        gdp,
+        gdpMax,
+        yearsDate,
+        yearQuarter
+      });
       this.createBarChart();
     } catch (error) {
       this.setState({ error });
     }
   };
   createBarChart = () => {
-    const { data, xMinDate, xMaxDate, gdpMax, gdp, yearsDate } = this.state;
+    const {
+      data,
+      xMinDate,
+      xMaxDate,
+      gdpMax,
+      gdp,
+      yearsDate,
+      yearQuarter
+    } = this.state;
     const yMargin = 40,
       width = 800,
       height = 400;
-    var tooltip = select('.barchart')
-      .append('div')
-      .attr('id', 'tooltip')
-      .style('opacity', 0);
-
-    var overlay = select('.barchart')
-      .append('div')
-      .attr('class', 'overlay')
-      .style('opacity', 0);
 
     const svgNode = select('.barchart')
       .attr('width', width + 100)
@@ -95,26 +118,26 @@ class App extends Component<AppProps, AppState> {
       gdp &&
       yearsDate &&
       data &&
-      yearsDate
+      yearQuarter
     ) {
       // handle bottom x axis
       // using scaleTime because of date
       const xScale = scaleTime()
-        .domain([xMinDate, xMaxDate])
-        .range([0, width]);
+        .domain([xMinDate, xMaxDate]) // start from earliest date tick to greatest
+        .range([0, width]); // width of scale, 0 to width
 
-      const xAxis = axisBottom(xScale);
+      const xAxis = axisBottom(xScale); // draw axis on bottom
 
       svgNode
         .append('g')
         .call(xAxis)
         .attr('id', 'x-axis')
-        .attr('transform', 'translate(60, 400)');
+        .attr('transform', 'translate(60, 400)'); // translate(x,y)
 
       // handle left y axis
       const yAxisScale = scaleLinear()
-        .domain([0, gdpMax])
-        .range([height, 0]);
+        .domain([0, gdpMax]) // the greatest is gdpMax on ticks
+        .range([height, 0]); // first range is greater to start from top, will be the greatest to bottom 0
 
       const yAxis = axisLeft(yAxisScale);
 
@@ -127,7 +150,7 @@ class App extends Component<AppProps, AppState> {
       // chart data
       // scaleLinear -> https://www.youtube.com/watch?v=gGuJWQqsnXc
 
-      const barWidth = width / 275;
+      const barWidth = width / data.length;
 
       const linearScale = scaleLinear()
         .domain([0, gdpMax])
@@ -140,27 +163,37 @@ class App extends Component<AppProps, AppState> {
         .data(scaledGdp)
         .enter()
         .append('rect')
-        .attr('data-date', function(d, i) {
-          return data[i][0];
-        })
-        .attr('data-gdp', function(d, i) {
-          return data[i][1];
-        })
+        .attr('data-date', (_d, i) => data[i][0])
+        .attr('data-gdp', (_d, i) => data[i][1])
         .attr('class', 'bar')
-        .attr('x', function(d, i) {
-          console.log('ts i ', i);
-          console.log('ts yearsDate[i] i ', yearsDate[i]);
-          return xScale(yearsDate[i]);
-        })
-        .attr('y', function(d, i) {
-          return height - d;
-        })
+        .attr('x', (_d, i) => xScale(yearsDate[i]))
+        .attr('y', d => height - d)
         .attr('width', barWidth)
-        .attr('height', function(d) {
-          return d;
-        })
+        .attr('height', d => d)
         .style('fill', '#33adff')
-        .attr('transform', 'translate(60, 0)');
+        .attr('transform', 'translate(60, 0)')
+        .on('mouseover', (d, i, rects) => {
+          select(rects[i]).style('fill', '#fff');
+          svgNode
+            .append('text')
+            .attr('id', () => `rects${i}`)
+            .attr('x', () => rects[i].x.baseVal.value)
+            .attr('y', () => rects[i].y.baseVal.value)
+            .append('tspan')
+            .text(`${yearQuarter[i]}`)
+            .attr('dy', '1em')
+            .append('tspan')
+            .text(
+              `
+            $${gdp[i].toFixed(1).replace(/(\d)(?=(\d{3})+\.)/g, '$1,')} Billion`
+            )
+            .attr('dy', '1em')
+            .attr('dx', '-5em');
+        })
+        .on('mouseout', (_d, i, rects) => {
+          select(rects[i]).style('fill', '#33adff');
+          svgNode.select(`#rects${i}`).remove();
+        });
     }
   };
   render() {
