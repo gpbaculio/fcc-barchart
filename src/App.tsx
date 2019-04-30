@@ -177,26 +177,27 @@ class App extends Component<AppProps, AppState> {
           select(rects[i]).style('fill', '#fff');
           select('.barchart-container')
             .append('div')
-            .attr('id', () => `rects${i}`)
-            .attr('class', 'rect-text')
+            .attr('id', 'tooltip')
             .html(
               `<p>${yearQuarter[i]}</p><p>$${gdp[i]
                 .toFixed(1)
                 .replace(/(\d)(?=(\d{3})+\.)/g, '$1,')} Billion</p>`
             )
+            .attr('data-date', data[i][0])
             .style('left', i * barWidth + 100 + 'px')
             .style('top', height - d + 'px')
             .style('transform', 'translateX(60px)');
         })
         .on('mouseout', (_d, i, rects) => {
           select(rects[i]).style('fill', '#33adff');
-          select(`#rects${i}`).remove();
+          select('#tooltip').remove();
         });
     }
   };
   render() {
     return (
       <div className='barchart-container'>
+        <div id='title'>United States GDP</div>
         <svg className='barchart' />
       </div>
     );

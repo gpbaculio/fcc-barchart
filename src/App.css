@@ -4,17 +4,16 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-direction: column;
 }
 
-.rect-text {
+#tooltip {
   display: flex;
   align-items: center;
   justify-content: center;
   position: absolute;
   text-align: center;
-  width: 100px;
-  height: 40px;
-  padding: 2px;
+  padding: 8px;
   font-size: 14px;
   background: #33adff;
   color: #fff;
@@ -22,4 +21,8 @@
   box-shadow: 1px 1px 10px;
   border-radius: 2px;
   pointer-events: none;
+}
+
+#title {
+  font-size: 24px;
 }
