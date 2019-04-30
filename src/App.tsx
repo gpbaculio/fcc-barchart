@@ -5,6 +5,7 @@ import { max, min } from 'd3-array';
 import { axisBottom, axisLeft } from 'd3-axis';
 import { select } from 'd3-selection';
 import { url } from './constants';
+import './App.css';
 
 interface AppProps {}
 interface AppState {
@@ -174,30 +175,31 @@ class App extends Component<AppProps, AppState> {
         .attr('transform', 'translate(60, 0)')
         .on('mouseover', (d, i, rects) => {
           select(rects[i]).style('fill', '#fff');
-          svgNode
-            .append('text')
+          select('.barchart-container')
+            .append('div')
             .attr('id', () => `rects${i}`)
-            .attr('x', () => rects[i].x.baseVal.value)
-            .attr('y', () => rects[i].y.baseVal.value)
-            .append('tspan')
-            .text(`${yearQuarter[i]}`)
-            .attr('dy', '1em')
-            .append('tspan')
-            .text(
-              `
-            $${gdp[i].toFixed(1).replace(/(\d)(?=(\d{3})+\.)/g, '$1,')} Billion`
+            .attr('class', 'rect-text')
+            .html(
+              `<p>${yearQuarter[i]}</p><p>$${gdp[i]
+                .toFixed(1)
+                .replace(/(\d)(?=(\d{3})+\.)/g, '$1,')} Billion</p>`
             )
-            .attr('dy', '1em')
-            .attr('dx', '-5em');
+            .style('left', i * barWidth + 100 + 'px')
+            .style('top', height - d + 'px')
+            .style('transform', 'translateX(60px)');
         })
         .on('mouseout', (_d, i, rects) => {
           select(rects[i]).style('fill', '#33adff');
-          svgNode.select(`#rects${i}`).remove();
+          select(`#rects${i}`).remove();
         });
     }
   };
   render() {
-    return <svg className='barchart' />;
+    return (
+      <div className='barchart-container'>
+        <svg className='barchart' />
+      </div>
+    );
   }
 }
 
